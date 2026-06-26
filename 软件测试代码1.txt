@@ -1,0 +1,17 @@
+public class LoginService{
+	public String login(String username,String password){
+		if(username.isEmpty()&&password.isEmpty()）{
+			return "用户名和密码不能为空"
+		}
+		if(username.equals("admin")&&password.equals("123")){
+			return "登录成功"
+		}
+		if(username.equals("admin")){
+			return "请输入正确的密码"
+		}
+		if(password.equals("123")){
+			return "请输入正确的用户名"
+		}
+		return “请输入正确的用户名和密码”
+	}
+}
