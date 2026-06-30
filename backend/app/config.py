@@ -15,17 +15,30 @@ class Settings(BaseSettings):
     DB_USER: str = "root"
     DB_PASSWORD: str = "123456"
     DB_NAME: str = "supermarket"
+
+    # 兼容 Railway MySQL 插件的多种环境变量名
     DATABASE_URL: Optional[str] = None
+    MYSQL_URL: Optional[str] = None
+    MYSQL_DATABASE_URL: Optional[str] = None
+    RAILWAY_MYSQL_URL: Optional[str] = None
 
     @property
     def db_url(self) -> str:
-        if self.DATABASE_URL:
-            url = self.DATABASE_URL
-            # Railway MySQL plugin provides mysql:// but we need mysql+pymysql://
+        # 按优先级尝试不同的环境变量
+        url = self.DATABASE_URL or self.MYSQL_URL or self.MYSQL_DATABASE_URL or self.RAILWAY_MYSQL_URL
+        if url:
             if url.startswith("mysql://"):
                 url = "mysql+pymysql://" + url[len("mysql://"):]
+            elif url.startswith("postgresql://") or url.startswith("postgres://"):
+                # PostgreSQL 连接不处理，保留原样
+                pass
+            print(f"[Config] 使用 DATABASE_URL: {url}")
             return url
-        return f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}?charset=utf8mb4"
+
+        # 备选：从独立变量拼接
+        url = f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}?charset=utf8mb4"
+        print(f"[Config] 使用本地配置: {url}")
+        return url
 
     # Redis 配置
     REDIS_HOST: str = "localhost"
@@ -45,6 +58,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "ignore"  # 忽略未定义的环境变量
 
 
 settings = Settings()
