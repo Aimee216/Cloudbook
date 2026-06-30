@@ -32,13 +32,14 @@ class Settings(BaseSettings):
 
     @property
     def db_url(self) -> str:
-        # 从 os.environ 直接读取（绕过 pydantic-settings）
+        # 直接从环境变量读取，绕过 pydantic-settings 缓存
         env_val = os.environ.get("DATABASE_URL")
-        debug(f"[DEBUG] os.environ['DATABASE_URL'] = {env_val}")
+        debug(f"[DEBUG] DATABASE_URL env = {env_val}")
 
         for key in ["DATABASE_URL", "MYSQL_URL", "MYSQL_DATABASE_URL", "MYSQL_PRIVATE_URL", "MYSQL_PUBLIC_URL"]:
             val = os.environ.get(key)
-            debug(f"[DEBUG] ENV {key} = {val}")
+            if val:
+                debug(f"[DEBUG] Found ENV {key} = {val[:50]}...")
 
         # 按优先级尝试不同的环境变量
         url = (
@@ -50,10 +51,9 @@ class Settings(BaseSettings):
             or self.RAILWAY_MYSQL_URL
         )
         if url:
-            debug(f"[DEBUG] url before conversion: {url}")
+            debug(f"[DEBUG] using url: {url[:60]}...")
             if url.startswith("mysql://"):
                 url = "mysql+pymysql://" + url[len("mysql://"):]
-            # 确保有 charset=utf8mb4 支持中文
             if "charset" not in url:
                 url += "?charset=utf8mb4" if "?" not in url else "&charset=utf8mb4"
             debug(f"[Config] 使用 DATABASE_URL: {url}")
@@ -80,7 +80,6 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE: int = 5 * 1024 * 1024  # 5MB
 
     class Config:
-        env_file = ".env"
         case_sensitive = True
         extra = "ignore"
 
