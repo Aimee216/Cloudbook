@@ -26,14 +26,6 @@ class Settings(BaseSettings):
 
     @property
     def db_url(self) -> str:
-        # 调试：打印所有相关环境变量
-        for key in ["DATABASE_URL", "MYSQL_URL", "MYSQL_DATABASE_URL", "MYSQL_PRIVATE_URL", "MYSQL_PUBLIC_URL"]:
-            val = os.environ.get(key)
-            if val:
-                print(f"[DEBUG] ENV {key} exists (length={len(val)})")
-            else:
-                print(f"[DEBUG] ENV {key} not set")
-
         # 按优先级尝试不同的环境变量
         url = (
             self.DATABASE_URL
@@ -46,6 +38,9 @@ class Settings(BaseSettings):
         if url:
             if url.startswith("mysql://"):
                 url = "mysql+pymysql://" + url[len("mysql://"):]
+            # 确保有 charset=utf8mb4 支持中文
+            if "charset" not in url:
+                url += "?charset=utf8mb4" if "?" not in url else "&charset=utf8mb4"
             print(f"[Config] 使用 DATABASE_URL: {url}")
             return url
 
@@ -73,7 +68,6 @@ class Settings(BaseSettings):
         env_file = ".env"
         case_sensitive = True
         extra = "ignore"
-        env_prefix = ""  # 不添加前缀
 
 
 settings = Settings()
