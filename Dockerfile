@@ -1,13 +1,12 @@
-# Use Python 3.11 slim image
+﻿# Use Python 3.11 slim image
 FROM python:3.11-slim
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies for MySQL
+# Install gcc for cryptography/bcrypt wheel compilation on some platforms
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
-    default-libmysqlclient-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
@@ -27,5 +26,5 @@ RUN mkdir -p uploads exports
 # Expose port
 EXPOSE 8000
 
-# Start the server (use shell form so $PORT env var from Railway is available)
+# Start the server (Railway injects $PORT automatically)
 CMD uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}
