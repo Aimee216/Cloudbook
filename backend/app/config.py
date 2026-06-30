@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from pydantic_settings import BaseSettings
 from typing import Optional
-import os
 
 
 class Settings(BaseSettings):
@@ -16,22 +15,28 @@ class Settings(BaseSettings):
     DB_PASSWORD: str = "123456"
     DB_NAME: str = "supermarket"
 
-    # 兼容 Railway MySQL 插件的多种环境变量名
+    # 兼容 Railway 等多种云平台的数据库环境变量
     DATABASE_URL: Optional[str] = None
     MYSQL_URL: Optional[str] = None
     MYSQL_DATABASE_URL: Optional[str] = None
+    MYSQL_PRIVATE_URL: Optional[str] = None
+    MYSQL_PUBLIC_URL: Optional[str] = None
     RAILWAY_MYSQL_URL: Optional[str] = None
 
     @property
     def db_url(self) -> str:
         # 按优先级尝试不同的环境变量
-        url = self.DATABASE_URL or self.MYSQL_URL or self.MYSQL_DATABASE_URL or self.RAILWAY_MYSQL_URL
+        url = (
+            self.DATABASE_URL
+            or self.MYSQL_URL
+            or self.MYSQL_DATABASE_URL
+            or self.MYSQL_PRIVATE_URL
+            or self.MYSQL_PUBLIC_URL
+            or self.RAILWAY_MYSQL_URL
+        )
         if url:
             if url.startswith("mysql://"):
                 url = "mysql+pymysql://" + url[len("mysql://"):]
-            elif url.startswith("postgresql://") or url.startswith("postgres://"):
-                # PostgreSQL 连接不处理，保留原样
-                pass
             print(f"[Config] 使用 DATABASE_URL: {url}")
             return url
 
@@ -58,7 +63,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
-        extra = "ignore"  # 忽略未定义的环境变量
+        extra = "ignore"
 
 
 settings = Settings()
