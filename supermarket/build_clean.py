@@ -1,0 +1,163 @@
+﻿# Create clean dashboard.html
+import os
+
+html = r"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>超市管理系统 - 工作台</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:#f0f2f5;color:#333;min-height:100vh}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:linear-gradient(180deg,#1a1a2e 0%,#16213e 100%);color:#fff;padding:24px 0;overflow-y:auto;z-index:100}
+.sidebar .logo{display:flex;align-items:center;gap:10px;padding:0 20px 24px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:16px}
+.sidebar .logo .icon{width:36px;height:36px;background:linear-gradient(135deg,#667eea,#764ba2);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sidebar .logo .icon svg{width:20px;height:20px;fill:#fff}
+.sidebar .logo span{font-size:16px;font-weight:700}
+.sidebar .nav-item{display:flex;align-items:center;gap:12px;padding:12px 20px;cursor:pointer;transition:background .2s;font-size:14px;color:rgba(255,255,255,0.7);text-decoration:none}
+.sidebar .nav-item:hover,.sidebar .nav-item.active{background:rgba(255,255,255,0.08);color:#fff}
+.sidebar .nav-item svg{width:20px;height:20px;fill:currentColor;flex-shrink:0}
+.sidebar .nav-label{font-size:11px;color:rgba(255,255,255,0.35);padding:16px 20px 6px;text-transform:uppercase;letter-spacing:1px}
+.main{margin-left:220px;min-height:100vh}
+.topbar{background:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.06);position:sticky;top:0;z-index:50}
+.topbar h2{font-size:18px;font-weight:600;color:#1a1a2e}
+.topbar .user-info{display:flex;align-items:center;gap:12px;font-size:14px}
+.topbar .user-info .avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:600}
+.topbar .user-info .logout{padding:6px 16px;border:1px solid #e0e0e0;border-radius:6px;background:#fff;cursor:pointer;font-size:13px;color:#666;transition:all .2s}
+.topbar .user-info .logout:hover{border-color:#dc2626;color:#dc2626}
+.content{padding:24px 28px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.stat-card .label{font-size:13px;color:#888;margin-bottom:6px}
+.stat-card .value{font-size:28px;font-weight:700;color:#1a1a2e}
+.stat-card .sub{font-size:12px;color:#aaa;margin-top:4px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin:28px 0 16px}
+.section-header h3{font-size:16px;font-weight:600;color:#1a1a2e}
+.card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.table{width:100%;border-collapse:collapse}
+.table th{text-align:left;padding:12px 16px;font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;background:#f9fafb;border-bottom:1px solid #f0f0f0}
+.table td{padding:11px 16px;font-size:13px;border-bottom:1px solid #f5f5f5}
+.table tr:last-child td{border-bottom:none}
+.table .empty{text-align:center;padding:40px;color:#bbb;font-size:14px}
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:500}
+.badge-green{background:#dcfce7;color:#16a34a}
+.badge-red{background:#fef2f2;color:#dc2626}
+.badge-gray{background:#f3f4f6;color:#6b7280}
+.badge-blue{background:#eef2ff;color:#6366f1}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.page-header h3{font-size:18px;font-weight:600;color:#1a1a2e}
+.btn{padding:8px 20px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-block}
+.btn-primary{background:linear-gradient(135deg,#667eea,#764ba2);color:#fff}
+.btn-primary:hover{opacity:.9}
+.btn-sm{padding:4px 12px;border:none;border-radius:6px;font-size:12px;cursor:pointer;background:#f0f2ff;color:#667eea;transition:all .2s}
+.btn-sm:hover{background:#e0e4ff}
+.btn-danger{background:#fef2f2;color:#dc2626}
+.btn-danger:hover{background:#fecaca}
+.view-section{display:none}
+#dashboardView{display:block}
+@media(max-width:768px){.sidebar{width:60px}.sidebar .logo span,.sidebar .nav-item span,.sidebar .nav-label{display:none}.sidebar .nav-item{justify-content:center;padding:12px}.main{margin-left:60px}.content{padding:16px}.stats-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+<div class="logo"><div class="icon"><svg viewBox="0 0 24 24"><path d="M3 3h7v7H3V3zm0 11h7v7H3v-7zm11-11h7v7h-7V3zm0 11h7v7h-7v-7z"/></svg></div><span>超市管理系统</span></div>
+<div class="nav-label">导航</div>
+<a class="nav-item active" href="#" data-view="dashboard" onclick="switchView('dashboard')"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg><span>工作台</span></a>
+<div class="nav-label">管理</div>
+<a class="nav-item" href="#" data-view="products" onclick="switchView('products')"><svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10z"/></svg><span>商品管理</span></a>
+<a class="nav-item" href="#" data-view="categories" onclick="switchView('categories')"><svg viewBox="0 0 24 24"><path d="M3 3h7v7H3V3zm0 11h7v7H3v-7zm11-11h7v7h-7V3zm0 11h7v7h-7v-7z"/></svg><span>分类管理</span></a>
+<a class="nav-item" href="#" data-view="orders" onclick="switchView('orders')"><svg viewBox="0 0 24 24"><path d="M21 5V3H3v2l8 9v5H6v2h12v-2h-5v-5l8-9z"/></svg><span>订单管理</span></a>
+<a class="nav-item" href="#" data-view="stock" onclick="switchView('stock')"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H4V4h16v16zM6 6h12v2H6zm0 4h12v2H6zm0 8h8v-2H6z"/></svg><span>库存管理</span></a>
+<a class="nav-item" href="#" data-view="suppliers" onclick="switchView('suppliers')"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg><span>供应商管理</span></a>
+<a class="nav-item" href="#" data-view="customers" onclick="switchView('customers')"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg><span>顾客管理</span></a>
+<a class="nav-item" href="#" data-view="employees" onclick="switchView('employees')"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg><span>员工管理</span></a>
+<a class="nav-item" href="#" data-view="stats" onclick="switchView('stats')"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg><span>数据报表</span></a>
+</aside>
+<div class="main">
+<div class="topbar">
+<h2 id="pageTitle">工作台</h2>
+<div class="user-info"><span id="userNameDisplay"></span><div class="avatar" id="userAvatar"></div><button class="logout" onclick="logout()">退出登录</button></div>
+</div>
+<div class="content" id="mainContent">
+<div class="view-section" id="dashboardView">
+<div class="stats-grid">
+<div class="stat-card"><div class="label">商品总数</div><div class="value" id="statProducts">-</div><div class="sub">全部商品</div></div>
+<div class="stat-card"><div class="label">低库存预警</div><div class="value" id="statLowStock">-</div><div class="sub" style="color:#dc2626">需及时补货</div></div>
+<div class="stat-card"><div class="label">本月营收</div><div class="value" id="statRevenue">-</div><div class="sub">当月销售额</div></div>
+<div class="stat-card"><div class="label">员工人数</div><div class="value" id="statEmployees">-</div><div class="sub">在职员工</div></div>
+</div>
+<div class="section-header"><h3>员工列表</h3><span class="badge badge-blue">最新数据</span></div>
+<div class="card"><table class="table"><thead><tr><th>姓名</th><th>职位</th><th>手机号</th><th>入职日期</th><th>状态</th></tr></thead><tbody id="empBody"><tr><td colspan="5" class="empty">加载中...</td></tr></tbody></table></div>
+</div>
+<div class="view-section" id="productsView"><div class="page-header"><h3>商品管理</h3></div><div class="card"><table class="table"><thead><tr><th>名称</th><th>条形码</th><th>分类</th><th>进价</th><th>售价</th><th>库存</th><th>状态</th></tr></thead><tbody id="productsBody"><tr><td colspan="8" class="empty">加载中...</td></tr></tbody></table></div></div>
+<div class="view-section" id="categoriesView"><div class="page-header"><h3>分类管理</h3><button class="btn btn-primary" onclick="categoriesModule.showForm()">+ 添加</button></div><div class="card"><table class="table"><thead><tr><th>ID</th><th>名称</th><th>排序</th><th>操作</th></tr></thead><tbody id="catBody"><tr><td colspan="4" class="empty">加载中...</td></tr></tbody></table></div></div>
+<div class="view-section" id="ordersView"><div class="page-header"><h3>订单管理</h3></div><div class="card"><table class="table"><thead><tr><th>订单号</th><th>顾客</th><th>金额</th><th>状态</th><th>时间</th></tr></thead><tbody id="orderBody"><tr><td colspan="5" class="empty">加载中...</td></tr></tbody></table></div></div>
+<div class="view-section" id="stockView"><div class="page-header"><h3>库存管理</h3></div><div class="card"><table class="table"><thead><tr><th>商品</th><th>变动</th><th>类型</th><th>操作人</th><th>时间</th></tr></thead><tbody id="stockBody"><tr><td colspan="5" class="empty">加载中...</td></tr></tbody></table></div></div>
+<div class="view-section" id="suppliersView"><div class="page-header"><h3>供应商管理</h3><button class="btn btn-primary" onclick="suppliersModule.showForm()">+ 添加</button></div><div class="card"><table class="table"><thead><tr><th>名称</th><th>联系人</th><th>电话</th><th>评分</th><th>操作</th></tr></thead><tbody id="suppBody"><tr><td colspan="5" class="empty">加载中...</td></tr></tbody></table></div></div>
+<div class="view-section" id="customersView"><div class="page-header"><h3>顾客管理</h3></div><div class="card"><table class="table"><thead><tr><th>姓名</th><th>手机</th><th>积分</th><th>消费</th><th>注册时间</th></tr></thead><tbody id="custBody"><tr><td colspan="5" class="empty">加载中...</td></tr></tbody></table></div></div>
+<div class="view-section" id="employeesView"><div class="page-header"><h3>员工管理</h3><button class="btn btn-primary" onclick="employeesModule.showForm()">+ 添加</button></div><div class="card"><table class="table"><thead><tr><th>姓名</th><th>职位</th><th>手机</th><th>入职</th><th>薪资</th><th>状态</th></tr></thead><tbody id="empListBody"><tr><td colspan="6" class="empty">加载中...</td></tr></tbody></table></div></div>
+<div class="view-section" id="statsView"><div class="page-header"><h3>数据报表</h3></div><div class="stats-grid" id="statsGrid2" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+<div class="stat-card"><div class="label">商品总数</div><div class="value" id="statTotalProd">-</div></div>
+<div class="stat-card"><div class="label">低库存</div><div class="value" id="statLowCount">-</div></div>
+<div class="stat-card"><div class="label">低库存占比</div><div class="value" id="statLowRatio">-</div></div>
+<div class="stat-card"><div class="label">周转率</div><div class="value" id="statTurnover">-</div></div>
+<div class="stat-card"><div class="label">销售额</div><div class="value" id="statRevenue2">-</div></div>
+<div class="stat-card"><div class="label">毛利</div><div class="value" id="statProfit">-</div></div>
+<div class="stat-card"><div class="label">毛利率</div><div class="value" id="statMargin">-</div></div>
+</div></div>
+</div>
+</div>
+
+<!-- Modals -->
+<div class="modal-overlay" id="catModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center">
+<div style="background:#fff;border-radius:16px;padding:24px;width:90%;max-width:400px">
+<h3 style="margin-bottom:16px">添加分类</h3>
+<input id="catName" style="width:100%;padding:10px;border:1.5px solid #e0e0e0;border-radius:8px;font-size:14px;margin-bottom:16px">
+<button class="btn btn-primary" onclick="categoriesModule.add()">添加</button>
+<button class="btn" style="margin-left:8px;background:#f3f4f6" onclick="hideModal('catModal')">取消</button>
+</div></div>
+
+<script>
+var API_BASE = window.location.port === '3000' ? 'http://localhost:8000' : '';
+var token = localStorage.getItem('token');
+var user = JSON.parse(localStorage.getItem('user') || '{}');
+if (!token) { window.location.href = 'login'; }
+var AUTH = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+document.getElementById('userNameDisplay').textContent = user.username || '';
+document.getElementById('userAvatar').textContent = (user.username || '?')[0];
+function logout() { localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href = 'login'; }
+
+function switchView(name) {
+    document.querySelectorAll('.view-section').forEach(function(v) { v.style.display = 'none'; });
+    var el = document.getElementById(name + 'View');
+    if (el) el.style.display = 'block';
+    document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+    var nav = document.querySelector('[data-view="' + name + '"]');
+    if (nav) nav.classList.add('active');
+    document.getElementById('pageTitle').textContent = nav ? nav.textContent.trim() : '工作台';
+    // Load module data
+    var modMap = {
+        dashboard:'dashboardModule', products:'productsModule', categories:'categoriesModule',
+        orders:'ordersModule', stock:'stockModule', suppliers:'suppliersModule',
+        customers:'customersModule', employees:'employeesModule', stats:'statsModule'
+    };
+    var modName = modMap[name];
+    if (modName && window[modName] && window[modName].load) {
+        window[modName].load();
+    }
+}
+
+function showModal(id) { var el = document.getElementById(id); if(el) el.style.display = 'flex'; }
+function hideModal(id) { var el = document.getElementById(id); if(el) el.style.display = 'none'; }
+</script>
+<script src="modules.js"></script>
+<script>setTimeout(function(){ dashboardModule.load(); }, 200);</script>
+</body>
+</html>
+"""
+
+path = r'E:\Cloudbook_git\supermarket\frontend\dashboard.html'
+with open(path, 'w', encoding='utf-8') as f:
+    f.write(html)
+print(f'Written: {len(html)} bytes')
