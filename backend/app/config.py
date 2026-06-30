@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from pydantic_settings import BaseSettings
 from typing import Optional
+import os
 
 
 class Settings(BaseSettings):
@@ -25,6 +26,14 @@ class Settings(BaseSettings):
 
     @property
     def db_url(self) -> str:
+        # 调试：打印所有相关环境变量
+        for key in ["DATABASE_URL", "MYSQL_URL", "MYSQL_DATABASE_URL", "MYSQL_PRIVATE_URL", "MYSQL_PUBLIC_URL"]:
+            val = os.environ.get(key)
+            if val:
+                print(f"[DEBUG] ENV {key} exists (length={len(val)})")
+            else:
+                print(f"[DEBUG] ENV {key} not set")
+
         # 按优先级尝试不同的环境变量
         url = (
             self.DATABASE_URL
@@ -64,6 +73,7 @@ class Settings(BaseSettings):
         env_file = ".env"
         case_sensitive = True
         extra = "ignore"
+        env_prefix = ""  # 不添加前缀
 
 
 settings = Settings()
