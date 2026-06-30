@@ -2,6 +2,12 @@
 from pydantic_settings import BaseSettings
 from typing import Optional
 import os
+import sys
+
+
+def debug(msg: str):
+    """输出到 stderr 确保 Railway 日志能显示"""
+    print(msg, file=sys.stderr, flush=True)
 
 
 class Settings(BaseSettings):
@@ -26,6 +32,14 @@ class Settings(BaseSettings):
 
     @property
     def db_url(self) -> str:
+        # 从 os.environ 直接读取（绕过 pydantic-settings）
+        env_val = os.environ.get("DATABASE_URL")
+        debug(f"[DEBUG] os.environ['DATABASE_URL'] = {env_val}")
+
+        for key in ["DATABASE_URL", "MYSQL_URL", "MYSQL_DATABASE_URL", "MYSQL_PRIVATE_URL", "MYSQL_PUBLIC_URL"]:
+            val = os.environ.get(key)
+            debug(f"[DEBUG] ENV {key} = {val}")
+
         # 按优先级尝试不同的环境变量
         url = (
             self.DATABASE_URL
@@ -36,17 +50,18 @@ class Settings(BaseSettings):
             or self.RAILWAY_MYSQL_URL
         )
         if url:
+            debug(f"[DEBUG] url before conversion: {url}")
             if url.startswith("mysql://"):
                 url = "mysql+pymysql://" + url[len("mysql://"):]
             # 确保有 charset=utf8mb4 支持中文
             if "charset" not in url:
                 url += "?charset=utf8mb4" if "?" not in url else "&charset=utf8mb4"
-            print(f"[Config] 使用 DATABASE_URL: {url}")
+            debug(f"[Config] 使用 DATABASE_URL: {url}")
             return url
 
         # 备选：从独立变量拼接
         url = f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}?charset=utf8mb4"
-        print(f"[Config] 使用本地配置: {url}")
+        debug(f"[Config] 使用本地配置: {url}")
         return url
 
     # Redis 配置
