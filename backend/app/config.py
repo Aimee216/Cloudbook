@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 from pydantic_settings import BaseSettings
 from typing import Optional
 import os
@@ -15,60 +15,29 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
 
-    # MySQL 数据库配置
-    DB_HOST: str = "localhost"
-    DB_PORT: int = 3306
-    DB_USER: str = "root"
-    DB_PASSWORD: str = "123456"
-    DB_NAME: str = "supermarket"
-
-    # 兼容 Railway 等多种云平台的数据库环境变量
+    # SQLite 数据库配置
+    # 默认使用本地文件；可通过 DATABASE_URL 环境变量覆盖
     DATABASE_URL: Optional[str] = None
-    MYSQL_URL: Optional[str] = None
-    MYSQL_DATABASE_URL: Optional[str] = None
-    MYSQL_PRIVATE_URL: Optional[str] = None
-    MYSQL_PUBLIC_URL: Optional[str] = None
-    RAILWAY_MYSQL_URL: Optional[str] = None
+    SQLITE_PATH: str = "supermarket.db"
 
     @property
     def db_url(self) -> str:
-        # 直接从环境变量读取，绕过 pydantic-settings 缓存
+        # 优先从环境变量读取
         env_val = os.environ.get("DATABASE_URL")
-        debug(f"[DEBUG] DATABASE_URL env = {env_val}")
+        if env_val:
+            debug(f"[Config] 使用 DATABASE_URL: {env_val}")
+            return env_val
 
-        for key in ["DATABASE_URL", "MYSQL_URL", "MYSQL_DATABASE_URL", "MYSQL_PRIVATE_URL", "MYSQL_PUBLIC_URL"]:
-            val = os.environ.get(key)
-            if val:
-                debug(f"[DEBUG] Found ENV {key} = {val[:50]}...")
+        # 默认 SQLite
+        # 在 Railway 上使用 /data/supermarket.db 确保持久化
+        railway_data = "/data/supermarket.db"
+        if os.path.exists("/data/") or os.environ.get("RAILWAY_SERVICE_NAME"):
+            debug(f"[Config] 检测到 Railway 环境，使用持久化路径: {railway_data}")
+            return f"sqlite:///{railway_data}"
 
-        # 按优先级尝试不同的环境变量
-        url = (
-            self.DATABASE_URL
-            or self.MYSQL_URL
-            or self.MYSQL_DATABASE_URL
-            or self.MYSQL_PRIVATE_URL
-            or self.MYSQL_PUBLIC_URL
-            or self.RAILWAY_MYSQL_URL
-        )
-        if url:
-            debug(f"[DEBUG] using url: {url[:60]}...")
-            if url.startswith("mysql://"):
-                url = "mysql+pymysql://" + url[len("mysql://"):]
-            if "charset" not in url:
-                url += "?charset=utf8mb4" if "?" not in url else "&charset=utf8mb4"
-            debug(f"[Config] 使用 DATABASE_URL: {url}")
-            return url
-
-        # 备选：从独立变量拼接
-        url = f"mysql+pymysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}?charset=utf8mb4"
-        debug(f"[Config] 使用本地配置: {url}")
-        return url
-
-    # Redis 配置
-    REDIS_HOST: str = "localhost"
-    REDIS_PORT: int = 6379
-    REDIS_PASSWORD: Optional[str] = None
-    REDIS_DB: int = 0
+        local_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), self.SQLITE_PATH)
+        debug(f"[Config] 使用本地 SQLite: {local_path}")
+        return f"sqlite:///{local_path}"
 
     # JWT 配置
     SECRET_KEY: str = "supermarket-secret-key-change-in-production"
