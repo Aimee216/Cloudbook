@@ -37,10 +37,6 @@ async def startup():
     init_db()
 
 
-@app.get("/")
-async def root():
-    return {"message": f"{settings.APP_NAME} API is running", "version": settings.APP_VERSION}
-
 # ===== Serve frontend static pages =====
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi import Request
@@ -64,5 +60,8 @@ async def redirect_dashboard():
 @app.get("/modules.js", response_class=FileResponse, include_in_schema=False)
 async def serve_modules():
     return FileResponse(os.path.join(_frontend_dir, "modules.js"))
-# ===== END frontend =====
 
+@app.get("/api/health")
+async def root():
+    return {"message": f"{settings.APP_NAME} API is running", "version": settings.APP_VERSION}
+# ===== END frontend =====
