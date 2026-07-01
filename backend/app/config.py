@@ -29,14 +29,12 @@ class Settings(BaseSettings):
             return env_val
 
         # 默认 SQLite
-        # 在 Railway 上使用 /data/supermarket.db 确保持久化
-        railway_data = "/data/supermarket.db"
-        if os.path.exists("/data/") or os.environ.get("RAILWAY_SERVICE_NAME"):
-            debug(f"[Config] 检测到 Railway 环境，使用持久化路径: {railway_data}")
-            return f"sqlite:///{railway_data}"
-
-        local_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), self.SQLITE_PATH)
-        debug(f"[Config] 使用本地 SQLite: {local_path}")
+        # 使用当前工作目录（Docker 中为 /app/backend）
+        local_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            self.SQLITE_PATH
+        )
+        debug(f"[Config] 使用 SQLite: {local_path}")
         return f"sqlite:///{local_path}"
 
     # JWT 配置
